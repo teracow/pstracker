@@ -54,8 +54,10 @@ function SingleImageDownloader
 
 	echo "- starting download of link# [$2] ..."
 
-	# extract file extension
-	ext=$( echo $1 | sed "s/.*\(\.[^\.]*\)$/\1/" )
+	# extract file extension by checking only last 5 characters of URL (to handle .jpeg as worst case)
+	ext=$( echo ${1:(-5)} | sed "s/.*\(\.[^\.]*\)$/\1/" )
+
+	[[ "$ext" =~ "." ]] || ext=".jpg"	# if URL did not have a file extension then choose jpg as default
 
 	targetimage_pathfileext="${targetimage_pathfile}($2)${ext}"
 
@@ -79,7 +81,7 @@ function SingleImageDownloader
 	}
 
 link_count=0
-max_images=26
+max_images=40
 bad_count=0
 pids=""
 user_query="staci silverstone"
@@ -90,7 +92,7 @@ target_path="${current_path}/${user_query}"
 targetimage_pathfile="${target_path}/${image_file}"
 good_downloads_count_file="${temp_path}/successful-downloads.count"
 bad_downloads_count_file="${temp_path}/failed-downloads.count"
-countdown=$max_images		# this counter is used to control how many files are downloaded in total.
+countdown=$max_images		# control how many files are downloaded. Counts down to zero.
 
 [ -e "${good_downloads_count_file}" ] && rm -f "${good_downloads_count_file}"
 [ -e "${bad_downloads_count_file}" ] && rm -f "${bad_downloads_count_file}"
@@ -100,8 +102,6 @@ InitPSTracker
 mkdir -p "${target_path}"
 
 while read msg || [[ -n "$msg" ]] ; do
-	((link_count++))
-
 	while true; do
 		child_count=$(<"${process_tracker_file}")
 
@@ -111,6 +111,8 @@ while read msg || [[ -n "$msg" ]] ; do
 	done
 
 	if [ "$countdown" -gt 0 ] ; then
+		((link_count++))
+
 		SingleImageDownloader "$msg" "$link_count" &
 		pids[${link_count}]=$!		# record PID for checking later
 		((countdown--))
@@ -124,12 +126,12 @@ while read msg || [[ -n "$msg" ]] ; do
 		# how many were successful?
 		[ -e "${good_downloads_count_file}" ] && good_count=$(<"${good_downloads_count_file}") || good_count=0
 
-		# not enough yet, so go get some more
 		if [ "$good_count" -lt "$max_images" ] ; then
-			# need to increase countdown again to get remaining files
+			# not enough yet, so go get some more
+			# increase countdown again to get remaining files
 			countdown=$(($max_images-$good_count))
 		else
-			echo " *********** required number of files have been downloaded! ****************"
+			echo " *********** requested number of files have been downloaded! ****************"
 			break
 		fi
 	fi
@@ -140,4 +142,4 @@ done < "googliser-links.list"
 [ -e "${bad_downloads_count_file}" ] && bad_count=$(<"${bad_downloads_count_file}") || bad_count=0
 
 echo "all done!"
-echo "$good_count images were downloaded successfully and $bad_count failed."
+echo "$good_count images were downloaded OK with $bad_count failure."
