@@ -31,7 +31,7 @@ function DecrementPSTracker
 
 	}
 
-function PSLauncher
+function Worker
 	{
 
 	IncrementPSTracker
@@ -62,7 +62,7 @@ while read msg || [[ -n "$msg" ]] ; do
 	done
 
 	echo "- Launching new child with \$msg: [$msg]: "
-	PSLauncher "$msg" &
+	Worker "$msg" &
 	sleep 0.1		# need to allow child process time to spawn and update process counter file
 	echo "= Done! msg: [$msg] launched!"
 	echo "-------------------------"
