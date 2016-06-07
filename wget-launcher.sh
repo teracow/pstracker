@@ -142,4 +142,4 @@ done < "googliser-links.list"
 [ -e "${bad_downloads_count_file}" ] && bad_count=$(<"${bad_downloads_count_file}") || bad_count=0
 
 echo "all done!"
-echo "$good_count images were downloaded OK with $bad_count failure."
+echo "$good_count images were downloaded with $bad_count failures."
